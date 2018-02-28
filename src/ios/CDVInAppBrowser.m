@@ -251,6 +251,7 @@
 
             [tmpWindow makeKeyAndVisible];
             [tmpController presentViewController:nav animated:YES completion:nil];
+            [weakSelf hide:nil];
         }
     });
 }
