@@ -70,11 +70,11 @@
 
 - (BOOL) isSystemUrl:(NSURL*)url
 {
-	if ([[url host] isEqualToString:@"itunes.apple.com"]) {
-		return YES;
-	}
+  if ([[url host] isEqualToString:@"itunes.apple.com"]) {
+    return YES;
+  }
 
-	return NO;
+  return NO;
 }
 
 - (void)open:(CDVInvokedUrlCommand*)command
@@ -212,7 +212,47 @@
     [self.inAppBrowserViewController navigateTo:url];
     if (!browserOptions.hidden) {
         [self show:nil];
+    } else {
+        [self showInBackground:nil];
     }
+}
+
+// Necessary, because otherwise the css env values for safe padding are wrong
+- (void)showInBackground:(CDVInvokedUrlCommand*)command
+{
+    if (self.inAppBrowserViewController == nil) {
+        NSLog(@"Tried to show IAB after it was closed.");
+        return;
+    }
+    if (_previousStatusBarStyle != -1) {
+        NSLog(@"Tried to show IAB while already shown");
+        return;
+    }
+
+    _previousStatusBarStyle = [UIApplication sharedApplication].statusBarStyle;
+
+    __block CDVInAppBrowserNavigationController* nav = [[CDVInAppBrowserNavigationController alloc]
+                                   initWithRootViewController:self.inAppBrowserViewController];
+    nav.orientationDelegate = self.inAppBrowserViewController;
+    nav.navigationBarHidden = YES;
+    nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;
+
+    __weak CDVInAppBrowser* weakSelf = self;
+
+    // Run later to avoid the "took a long time" log message.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (weakSelf.inAppBrowserViewController != nil) {
+            CGRect frame = [[UIScreen mainScreen] bounds];
+            frame.origin.x -= 100000;
+            UIWindow *tmpWindow = [[UIWindow alloc] initWithFrame:frame];
+            UIViewController *tmpController = [[UIViewController alloc] init];
+            [tmpWindow setRootViewController:tmpController];
+            [tmpWindow setWindowLevel:UIWindowLevelNormal];
+
+            [tmpWindow makeKeyAndVisible];
+            [tmpController presentViewController:nav animated:YES completion:nil];
+        }
+    });
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command

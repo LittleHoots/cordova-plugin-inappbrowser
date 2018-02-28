@@ -50,6 +50,7 @@
             exec(null, null, 'InAppBrowser', 'close', []);
         },
         show: function (eventname) {
+            exec(null, null, 'InAppBrowser', 'hide', []);
             exec(null, null, 'InAppBrowser', 'show', []);
         },
         hide: function (eventname) {
